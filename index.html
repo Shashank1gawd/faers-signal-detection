@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FAERS Signal Detection</title>
+<style>
+:root{--paper:#F6F4EE;--ink:#16241F;--teal:#2E7D6B;--amber:#C97B3D;--red:#B3452C;--line:#D8D2C4;--card:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#12181A;--ink:#E9E6DD;--teal:#5FBFA6;--amber:#E0995C;--red:#E07A5F;--line:#31403C;--card:#1B2426}}
+:root[data-theme="dark"]{--paper:#12181A;--ink:#E9E6DD;--teal:#5FBFA6;--amber:#E0995C;--red:#E07A5F;--line:#31403C;--card:#1B2426}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;line-height:1.55}
+header,main{max-width:900px;margin:0 auto;padding-left:1.1rem;padding-right:1.1rem}
+header{padding-top:1.8rem;padding-bottom:.5rem}
+main{padding-bottom:3rem}
+h1{font-size:1.5rem;margin:0 0 .35rem}
+h3{margin:1.1rem 0 .3rem;font-size:1rem}
+.sub{opacity:.75;margin:0;font-size:.92rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:1.05rem;margin-bottom:.9rem}
+.faers{border-left:4px solid var(--teal)}
+.warn{background:rgba(201,123,61,.14);border:1px solid var(--amber);border-radius:4px;padding:.65rem .85rem;font-size:.84rem;margin-bottom:.9rem}
+.tabs{display:flex;gap:.4rem;margin-bottom:.9rem;flex-wrap:wrap}
+.tab{padding:.45rem .9rem;border:1px solid var(--line);border-radius:20px;cursor:pointer;font:inherit;font-size:.86rem;background:transparent;color:var(--ink)}
+.tab.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+.row{display:flex;gap:.6rem;flex-wrap:wrap;align-items:end}
+.field{display:flex;flex-direction:column;gap:.22rem}
+.field label{font-size:.76rem;opacity:.75}
+input[type=text],input[type=number],select{font:inherit;padding:.48rem;border:1px solid var(--line);border-radius:4px;background:var(--paper);color:var(--ink);width:165px;max-width:100%}
+input[type=number]{width:110px}
+button.run{font:inherit;padding:.5rem 1rem;border-radius:4px;border:1px solid var(--teal);background:var(--teal);color:#fff;cursor:pointer;font-size:.88rem}
+button.ghost{background:transparent;color:var(--teal)}
+button.ghost2{background:transparent;color:var(--ink);border-color:var(--line)}
+button:disabled{opacity:.5;cursor:default}
+.chips{display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.6rem;font-size:.8rem;align-items:center}
+.chip{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:14px;padding:.18rem .65rem;cursor:pointer;font:inherit;font-size:.8rem}
+.note{font-size:.78rem;opacity:.65;margin:.5rem 0 0}
+.status{font-size:.88rem;margin-top:.6rem;min-height:1.1rem}
+.err{color:var(--red)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:.4rem;display:none}
+.bar div{height:100%;width:0;background:var(--teal);transition:width .2s}
+.metrics{display:flex;gap:1.6rem;margin:.8rem 0 .1rem;flex-wrap:wrap}
+.metric b{display:block;font-size:1.2rem}
+.metric span{font-size:.75rem;opacity:.7}
+.scroll{overflow-x:auto;margin-top:.5rem}
+table{width:100%;border-collapse:collapse;font-size:.83rem}
+th,td{padding:.4rem .45rem;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{opacity:.75;font-weight:600;cursor:pointer;user-select:none}
+th:hover{color:var(--teal)}
+tr.signal td:first-child{border-left:3px solid var(--amber);padding-left:.4rem}
+tr.rowclick{cursor:pointer}
+.ci{opacity:.6;font-size:.85em}
+.badge{font-size:.7rem;padding:.1rem .45rem;border-radius:10px;background:rgba(46,125,107,.15)}
+.badge.signal{background:rgba(201,123,61,.22);color:var(--amber);font-weight:700}
+.badge.rev{background:rgba(46,125,107,.2);color:var(--teal)}
+button.mini{font:inherit;font-size:.72rem;border:1px solid var(--teal);color:var(--teal);background:transparent;border-radius:4px;padding:.14rem .45rem;cursor:pointer;margin-right:.3rem}
+.tools{display:flex;gap:.9rem;align-items:center;flex-wrap:wrap;margin-top:.7rem;font-size:.82rem}
+.tools label{display:flex;gap:.35rem;align-items:center;cursor:pointer}
+textarea{width:100%;height:100px;margin-top:.5rem;font:12px monospace;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:4px}
+.drug-row{display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:.55rem;align-items:end;margin-top:.55rem}
+.drug-row input{width:100%}
+.rm{border:none;background:transparent;color:var(--amber);cursor:pointer;font-size:1rem;padding:.25rem}
+@media(max-width:560px){.drug-row{grid-template-columns:1fr 1fr auto}.drug-row .field:first-child{grid-column:1/-1}}
+code{background:rgba(127,127,127,.15);padding:.1rem .3rem;border-radius:3px;font-size:.87em}
+.formula{margin:.3rem 0;padding:.5rem .65rem;background:rgba(46,125,107,.08);border-radius:4px;font-size:.9rem}
+.t2{max-width:420px;text-align:center}
+.t2 th,.t2 td{border:1px solid var(--line);text-align:center;white-space:normal;cursor:default}
+p{margin:.35rem 0}
+.expand{background:rgba(46,125,107,.06);border-radius:0 0 4px 4px;padding:.8rem;margin:-.4rem 0 .6rem;font-size:.85rem}
+.expand .row{margin-top:.5rem}
+.barlist{display:flex;flex-direction:column;gap:.3rem;margin-top:.4rem}
+.barlist .r{display:grid;grid-template-columns:110px 1fr 46px;gap:.5rem;align-items:center;font-size:.82rem}
+.barlist .t{background:var(--line);border-radius:3px;height:12px;overflow:hidden}
+.barlist .t div{height:100%;background:var(--teal)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:600px){.grid2{grid-template-columns:1fr}}
+.modebar{display:flex;gap:.4rem;margin-bottom:.7rem}
+.modebtn{padding:.4rem .8rem;border:1px solid var(--line);border-radius:4px;background:transparent;color:var(--ink);cursor:pointer;font:inherit;font-size:.85rem}
+.modebtn.active{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+@media print{.tabs,.tools,.chips,button,input,select,details summary,.modebar{display:none!important}.card{border:none;padding:0}body{background:#fff;color:#000}}
+</style>
+</head>
+<body>
+<header>
+  <h1>💊 FAERS Signal Detection</h1>
+  <p class="sub">Screen adverse-event reports for disproportionate reporting, investigate the underlying cases, and compare drugs — using live FDA data or your own numbers.</p>
+</header>
+<main>
+  <div class="card faers"><b>FAERS</b> = <b>F</b>DA <b>A</b>dverse <b>E</b>vent <b>R</b>eporting <b>S</b>ystem — the FDA's public database of adverse event and medication error reports from manufacturers, healthcare professionals and patients.</div>
+  <div class="warn"><b>Educational prototype: not for clinical, regulatory, or patient-care decisions.</b> Verify all imported and inferred information against the original source before use. FAERS is spontaneous reporting: results are hypothesis-generating, not proof of causation or true incidence. Data comes from openFDA, which states its data is unvalidated and must not be used for medical-care decisions.</div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="live">🌐 Live data</button>
+    <button class="tab" data-tab="invest">🔍 Investigate</button>
+    <button class="tab" data-tab="calc">🧮 Calculator</button>
+    <button class="tab" data-tab="learn">📘 Learn</button>
+  </div>
+
+  <!-- LIVE -->
+  <section id="live" class="card">
+    <div class="modebar">
+      <button class="modebtn active" data-mode="drug">Analyze a drug → top events</button>
+      <button class="modebtn" data-mode="event">Analyze an event → top drugs</button>
+    </div>
+    <div class="row">
+      <div class="field" id="primaryField"><label>Drug name (brand or generic)</label><input type="text" id="primaryInput" list="drugList" value="ozempic" autocomplete="off"></div>
+      <div class="field"><label>Top results (5–20)</label><input type="number" id="topN" value="10" min="5" max="20"></div>
+      <button class="run" id="runBtn">🚀 Run analysis</button>
+    </div>
+    <datalist id="drugList"><option value="ozempic"><option value="semaglutide"><option value="wegovy"><option value="mounjaro"><option value="tirzepatide"><option value="ibuprofen"><option value="acetaminophen"><option value="aspirin"><option value="metformin"><option value="atorvastatin"><option value="lisinopril"><option value="amlodipine"><option value="omeprazole"><option value="sertraline"><option value="warfarin"><option value="humira"><option value="eliquis"><option value="xarelto"><option value="gabapentin"><option value="prednisone"></datalist>
+    <div class="chips" id="quickChips"><span style="opacity:.65">Try:</span>
+      <button class="chip" data-v="ozempic">ozempic</button><button class="chip" data-v="ibuprofen">ibuprofen</button><button class="chip" data-v="metformin">metformin</button><button class="chip" data-v="eliquis">eliquis</button><button class="chip" data-v="atorvastatin">atorvastatin</button>
+    </div>
+    <div class="chips" id="recentChips" style="display:none"><span style="opacity:.65">Recent:</span></div>
+    <div class="row" style="margin-top:.8rem">
+      <div class="field" id="specificField"><label>Or check one specific reaction for this drug</label><input type="text" id="specificEvent" placeholder="e.g. pancreatitis"></div>
+      <button class="run ghost" id="checkBtn">Check this one</button>
+    </div>
+    <details style="margin-top:.7rem"><summary style="cursor:pointer;font-size:.83rem;opacity:.8">Optional: openFDA API key</summary>
+      <div class="field" style="margin-top:.45rem"><label>Free key from open.fda.gov raises the limit from ~40 to 240 requests/min</label><input type="text" id="apiKey" placeholder="leave blank if none"></div>
+    </details>
+    <p class="note">Reaction terms are MedDRA Preferred Terms (e.g. NAUSEA, PANCREATITIS). A 10-item run uses roughly a dozen requests.</p>
+    <div class="status" id="status"></div>
+    <div class="bar" id="bar"><div id="barFill"></div></div>
+    <div id="metrics"></div>
+    <div class="tools" id="tools" style="display:none">
+      <label><input type="checkbox" id="onlySignals"> Only potential signals</label>
+      <button class="mini" id="copyBtn">📋 Copy as CSV</button>
+      <button class="mini" id="printBtn">🖨️ Export report</button>
+    </div>
+    <div id="results"></div>
+    <div id="csvBox"></div>
+    <p class="note">Click any row to expand a plain-language summary, an agreement check across methods, and reviewer notes.</p>
+  </section>
+
+  <!-- INVESTIGATE -->
+  <section id="invest" class="card" style="display:none">
+    <div id="investEmpty"><p>Run a Live analysis first, then click <b>🔍 Investigate</b> on any result row to pull a case-level sample here.</p></div>
+    <div id="investBody" style="display:none">
+      <p class="note" id="investLabel"></p>
+      <div class="status" id="investStatus"></div>
+      <div id="investContent"></div>
+    </div>
+  </section>
+
+  <!-- CALCULATOR -->
+  <section id="calc" class="card" style="display:none">
+    <p style="margin-top:0">Enter your own numbers, or push a live result here with <b>→ Calc</b> to compare several drugs for the <i>same</i> event against one shared background.</p>
+    <div class="row">
+      <div class="field"><label>Total reports in database (N)</label><input type="number" id="calcN" value="12000000"></div>
+      <div class="field"><label>Total reports of this event, all drugs (E)</label><input type="number" id="calcE" value="9540"></div>
+    </div>
+    <p class="note" id="calcLabel"></p>
+    <div id="calcRows"></div>
+    <div class="row" style="margin-top:.75rem">
+      <button class="run ghost" id="addRow">+ Add drug</button>
+      <button class="run" id="calcBtn">Calculate</button>
+      <button class="run ghost" id="resetCalc">Reset</button>
+    </div>
+    <div id="calcOut"></div>
+  </section>
+
+  <!-- LEARN -->
+  <section id="learn" style="display:none">
+    <div class="card">
+      <h3 style="margin-top:0">The 2×2 table</h3>
+      <table class="t2"><tr><th></th><th>Event of interest</th><th>Other events</th></tr><tr><th>This drug</th><td>a</td><td>b</td></tr><tr><th>All other drugs</th><td>c</td><td>d</td></tr></table>
+      <p><b>N</b> = a+b+c+d. <b>Expected</b> E<sub>a</sub> = (a+b)(a+c)/N — what you'd see if drug and event were unrelated. Every method compares <b>a</b> to E<sub>a</sub>.</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Disproportionality formulas</h3>
+      <p><b>PRR</b> (Proportional Reporting Ratio):</p><div class="formula">PRR = [a/(a+b)] ÷ [c/(c+d)]</div>
+      <p><b>ROR</b> (Reporting Odds Ratio):</p><div class="formula">ROR = (a×d) ÷ (b×c)</div>
+      <p><b>95% CI</b>: estimate × exp(±1.96×SE); if the lower bound stays above 1 (or above 0 for IC, log scale), it's unlikely to be pure chance.</p>
+      <p><b>χ²</b> (Pearson chi-square for the 2×2 table, 1 degree of freedom, no continuity correction):</p><div class="formula">χ² = N(ad − bc)² ÷ [(a+b)(c+d)(a+c)(b+d)]</div>
+      <p><b>IC</b> (Information Component) — WHO-UMC's Bayesian method (BCPNN), on a log2 scale:</p>
+      <div class="formula">IC~ = log2[(a+0.5) ÷ (E<sub>a</sub>+0.5)]</div>
+      <p><b>EBGM</b> (Empirical Bayes Geometric Mean) — the FDA's Bayesian method:</p>
+      <div class="formula">EBGM~ = (a+0.5) ÷ (E<sub>a</sub>+0.5)</div>
+      <p style="font-size:.85rem;opacity:.75">IC and EBGM shown here are simplified point estimates for teaching. The real IC (BCPNN) and EBGM (MGPS) are fitted across the <i>entire</i> database at once to set their shrinkage priors — they can't come from one 2×2 table alone. Real thresholds: EB05 (lower 90% bound) ≥ 2, IC025 (lower 95% bound) > 0. Here, IC025 uses the published Norén approximation IC − 3.3(a+0.5)<sup>−½</sup> − 2(a+0.5)<sup>−3/2</sup>, and the EBGM~ check uses the point estimate ≥ 2 (looser than the real EB05 rule).</p>
+      <h3>Signal rule used here (Evans criteria)</h3>
+      <div class="formula">a ≥ 3 &nbsp;and&nbsp; PRR ≥ 2 &nbsp;and&nbsp; χ² ≥ 4</div>
+      <h3>Method agreement</h3>
+      <p>Because PRR, ROR, IC~ and EBGM~ can disagree on borderline cases, the app also shows how many of the four independently exceed their own rule-of-thumb threshold (e.g. "3/4 agree"). More agreement is more reassuring than any single number — a common real-world PV practice.</p>
+      <h3>Worked example</h3>
+      <p>a=20, b=80, c=30, d=370 → E<sub>a</sub>=10 → PRR <b>2.67</b>, ROR <b>3.08</b>, χ² <b>13.9</b>, IC~ <b>0.97</b>, EBGM~ <b>1.95</b> → clears the Evans rule.</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Case-level investigation (Investigate tab)</h3>
+      <p>Pulls a sample (up to 100, most recent first) of the actual reports behind a drug–event pair and breaks them down:</p>
+      <p>• <b>Serious vs non-serious</b> — FAERS marks a report "serious" if it involved death, a life-threatening event, hospitalization, disability, a congenital anomaly, or was "other medically important".<br>
+      • <b>Outcome</b> — recovered, recovering, not recovered, recovered with sequelae, fatal, or unknown.<br>
+      • <b>Age group / sex distribution</b> — from the reporter-supplied demographics.<br>
+      • <b>Reporting-year trend</b> — counted across the fetched sample only (not the full population), clearly labeled as such.<br>
+      • <b>Indication</b> — why the drug was prescribed, from the suspect-drug record.<br>
+      • <b>Concomitant drugs</b> — other medicines listed on the same report (characterized as "concomitant" or "interacting", not "suspect").<br>
+      • <b>Dechallenge / rechallenge</b> — what happened when the drug was stopped/reduced (dechallenge) and whether the reaction reappeared if the drug was restarted (rechallenge) — strong causality clues when documented.<br>
+      • <b>Fatal-case review</b> — isolates reports with a fatal outcome for closer reading.</p>
+      <p style="font-size:.85rem;opacity:.75">This is a <i>sample</i>, not the full population (the API caps non-aggregate queries at 100 records), and it's PT-level, not full MedDRA SOC/PT hierarchy — the SOC groupings require a licensed MedDRA dictionary this public API doesn't expose.</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Reviewer notes &amp; saved searches</h3>
+      <p>Expanding a result row lets you mark it <i>Not reviewed / Confirmed / Dismissed</i> and leave a note — saved locally in your browser (not shared or uploaded anywhere), a lightweight stand-in for a real reviewer-workflow and audit trail. Recently searched drugs are saved the same way, as quick-access chips.</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Limitations</h3>
+      <p>• FAERS can't give true incidence rates. • One report can list several drugs or reactions, so counts overlap. • The case sample is capped at 100 and sorted by most recent, not randomly. • Duplicates, media attention and confounding by indication can create false signals. • Drug names vary — try brand and generic spellings. • Every screen needs clinical and PV expert review.</p>
+      <h3>Not included, on purpose</h3>
+      <p>• <b>AI case summarization / narrative generation</b> — would need a live call to an AI model from this page; once published, a Claude artifact page can no longer call Claude's API (that only works in the private editing preview), so it's left out rather than shipped broken.<br>
+      • <b>Full MedDRA SOC hierarchy</b> — MedDRA is licensed terminology; openFDA exposes Preferred Terms only.<br>
+      • <b>Literature integration, formal audit/compliance sign-off workflow</b> — these need a real backend and organizational access controls, out of scope for a single static portfolio page.</p>
+      <h3>Quick glossary</h3>
+      <p><b>ICSR</b> individual case safety report · <b>MedDRA PT</b> standardized reaction term · <b>Signal</b> possible drug–event link worth investigating · <b>Disproportionality</b> reported more than expected vs. other drugs · <b>Dechallenge/rechallenge</b> stopping/restarting a drug to test if a reaction depends on it.</p>
+    </div>
+  </section>
+</main>
+
+<script>
+const BASE='https://api.fda.gov/drug/event.json';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const cache=new Map();
+let calcData=[], calcSkipped=0, mode='drug', ctx=null, liveRows=[], liveView=[], busy=false, calcEvent=null;
+const LS_RECENT='faers_recent', LS_REVIEW='faers_review_';
+
+// Build queries with real spaces; URLSearchParams encodes them. Never hand-write "+AND+" —
+// the encoder turns a literal "+" into %2B, which silently breaks the boolean AND.
+const escPhrase=v=>v.replace(/\\/g,'\\\\').replace(/"/g,'\\"');
+const drugQ=d=>`patient.drug.medicinalproduct:"${escPhrase(d)}"`;
+const eventQ=e=>`patient.reaction.reactionmeddrapt.exact:"${escPhrase(e)}"`;
+
+async function apiGet(params){
+  const url=new URL(BASE);
+  for(const [k,v] of Object.entries(params)) url.searchParams.set(k,v);
+  const key=$('apiKey').value.trim();
+  if(key) url.searchParams.set('api_key',key);
+  for(let i=0;i<3;i++){
+    const res=await fetch(url.toString());
+    if(res.status===404) return {meta:{results:{total:0}},results:[]};
+    if(res.status===429){await sleep(2000*(i+1));continue}
+    if(!res.ok) throw new Error('FDA API error '+res.status);
+    return res.json();
+  }
+  throw new Error('Rate limited by openFDA. Add a free API key or wait a minute.');
+}
+async function totalReports(search){
+  const k=search||'*';
+  if(cache.has(k)) return cache.get(k);
+  const data=await apiGet(search?{search,limit:1}:{limit:1});
+  const t=data.meta?.results?.total||0;
+  cache.set(k,t);return t;
+}
+
+// ---------- STATS ----------
+function calcStats(a,b,c,d){
+  const n=a+b+c+d, ex=(a+b)*(a+c)/n;
+  const prr=(a/(a+b))/(c/(c+d)), ror=(a*d)/(b*c);
+  const sp=Math.sqrt(1/a-1/(a+b)+1/c-1/(c+d)), sr=Math.sqrt(1/a+1/b+1/c+1/d);
+  const chi2=n*Math.pow(a*d-b*c,2)/((a+b)*(c+d)*(a+c)*(b+d));
+  const ic=Math.log2((a+0.5)/(ex+0.5));
+  const icLow=ic-3.3*Math.pow(a+0.5,-0.5)-2*Math.pow(a+0.5,-1.5); // IC025 approximation (Noren et al.)
+  const ebgm=(a+0.5)/(ex+0.5);
+  const prrSig=a>=3&&prr>=2, rorSig=ror*Math.exp(-1.96*sr)>1, icSig=icLow>0, ebgmSig=ebgm>=2;
+  const agree=[prrSig,rorSig,icSig,ebgmSig].filter(Boolean).length;
+  return {prr,prrLow:prr*Math.exp(-1.96*sp),prrHigh:prr*Math.exp(1.96*sp),
+    ror,rorLow:ror*Math.exp(-1.96*sr),rorHigh:ror*Math.exp(1.96*sr),
+    chi2,ic,ebgm,agree,
+    signal:a>=3&&prr>=2&&chi2>=4};
+}
+function buildRow(term,a,b,c,d){
+  if(![a,b,c,d].every(v=>Number.isFinite(v)&&v>0)) return null;
+  return {term,a,b,c,d,...calcStats(a,b,c,d)};
+}
+const ci=(x,l,h)=>`${x.toFixed(2)} <span class="ci">(${l.toFixed(2)}–${h.toFixed(2)})</span>`;
+
+function summaryText(r,subjectLabel,ctxDrug,ctxTotalAll,ctxTotalSubject){
+  return `${r.a.toLocaleString()} report(s) pairing "${r.term}" with the selected item, among ${ctxTotalSubject.toLocaleString()} reports matching "${ctxDrug}". `+
+  `PRR ${r.prr.toFixed(2)} (95% CI ${r.prrLow.toFixed(2)}–${r.prrHigh.toFixed(2)}), ROR ${r.ror.toFixed(2)}, IC~ ${r.ic.toFixed(2)}, EBGM~ ${r.ebgm.toFixed(2)}. `+
+  `${r.agree}/4 methods independently exceed their screening threshold — ${r.signal?'this pair clears the Evans screening rule and would typically warrant a closer medical review.':'this pair does not clear the standard Evans screening rule on these numbers.'}`;
+}
+
+// ---------- REVIEW / RECENT (localStorage) ----------
+function reviewKey(drug,term){return LS_REVIEW+drug.toLowerCase()+'__'+term.toLowerCase()}
+function getReview(drug,term){try{return JSON.parse(localStorage.getItem(reviewKey(drug,term))||'null')}catch(e){return null}}
+function saveReview(drug,term,status,note){try{localStorage.setItem(reviewKey(drug,term),JSON.stringify({status,note,savedAt:new Date().toISOString()}))}catch(e){}}
+function getRecent(){try{return JSON.parse(localStorage.getItem(LS_RECENT)||'[]')}catch(e){return[]}}
+function pushRecent(name){
+  try{
+    let r=getRecent().filter(x=>x.toLowerCase()!==name.toLowerCase());
+    r.unshift(name);r=r.slice(0,8);
+    localStorage.setItem(LS_RECENT,JSON.stringify(r));
+    renderRecent();
+  }catch(e){}
+}
+function renderRecent(){
+  const r=getRecent(), box=$('recentChips');
+  if(!r.length){box.style.display='none';return}
+  box.style.display='flex';
+  box.innerHTML='<span style="opacity:.65">Recent:</span>'+r.map(n=>`<button class="chip" data-v="${esc(n)}">${esc(n)}</button>`).join('');
+  box.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{$('primaryInput').value=c.dataset.v;runLive()});
+}
+
+// ---------- TABLE RENDER (sortable) ----------
+let sortKey='prr', sortDir=-1;
+function tableHtml(rows,label,opts={}){
+  if(!rows.length) return '<p class="status">No analyzable results.</p>';
+  const sorted=[...rows].sort((x,y)=>sortKey==='term'?sortDir*String(x.term).localeCompare(String(y.term)):sortDir*((+x[sortKey]||0)-(+y[sortKey]||0)));
+  const th=(key,txt)=>`<th data-key="${key}">${txt}${sortKey===key?(sortDir>0?' ▲':' ▼'):''}</th>`;
+  return `<div class="scroll"><table id="${opts.tableId||''}">
+    <tr>${th('term',label)}${th('a','a')}${th('prr','PRR (95% CI)')}${th('ror','ROR (95% CI)')}${th('ic','IC~')}${th('ebgm','EBGM~')}${th('agree','Agree')}${th('signal','Flag')}${opts.withBtns?'<th></th>':''}</tr>`+
+  sorted.map((r,i)=>{
+    const rev=getReview(opts.drug||'',r.term);
+    return `<tr class="${r.signal?'signal':''}${opts.withBtns?' rowclick':''}" data-i="${rows.indexOf(r)}">
+      <td>${esc(r.term)}${rev?' <span class="badge rev">📝</span>':''}</td><td>${r.a.toLocaleString()}</td>
+      <td>${ci(r.prr,r.prrLow,r.prrHigh)}</td><td>${ci(r.ror,r.rorLow,r.rorHigh)}</td>
+      <td>${r.ic.toFixed(2)}</td><td>${r.ebgm.toFixed(2)}</td><td>${r.agree}/4</td>
+      <td><span class="badge ${r.signal?'signal':''}">${r.signal?'Signal':'—'}</span></td>
+      ${opts.withBtns?`<td><button class="mini calcbtn" data-i="${rows.indexOf(r)}">→ Calc</button><button class="mini investbtn" data-i="${rows.indexOf(r)}">🔍</button></td>`:''}
+    </tr>`;
+  }).join('')+'</table></div>';
+}
+function expandHtml(r,drug){
+  const rev=getReview(drug,r.term)||{status:'unreviewed',note:''};
+  return `<div class="expand">
+    <p>${esc(summaryText(r,r.term,drug,0,ctx?ctx.totalDrug:r.a+r.b))}</p>
+    <div class="row">
+      <div class="field"><label>Review status</label>
+        <select class="revStatus"><option value="unreviewed" ${rev.status==='unreviewed'?'selected':''}>Not reviewed</option><option value="confirmed" ${rev.status==='confirmed'?'selected':''}>Confirmed potential signal</option><option value="dismissed" ${rev.status==='dismissed'?'selected':''}>Dismissed — not relevant</option></select>
+      </div>
+      <div class="field" style="flex:1;min-width:200px"><label>Note</label><input type="text" class="revNote" value="${esc(rev.note||'')}" placeholder="Reviewer note..."></div>
+      <button class="run mini" style="padding:.4rem .8rem" data-save="${esc(r.term)}">Save note</button>
+    </div>
+    ${rev.savedAt?`<p class="note">Last saved ${new Date(rev.savedAt).toLocaleString()}</p>`:''}
+  </div>`;
+}
+
+// ---------- LIVE ----------
+function setStatus(msg,isErr){$('status').innerHTML=isErr?`<span class="err">${esc(msg)}</span>`:esc(msg)}
+function setBusy(b){busy=b;['runBtn','checkBtn'].forEach(id=>$(id).disabled=b);if(!b)$('bar').style.display='none'}
+function setProgress(i,n,term){$('bar').style.display='block';$('barFill').style.width=((i/n)*100)+'%';setStatus(`Checking ${i+1} of ${n}: ${term}`)}
+function showLive(){
+  liveView=liveRows.filter(r=>!$('onlySignals').checked||r.signal);
+  $('tools').style.display=liveRows.length?'flex':'none';
+  const label=mode==='drug'?'Event':'Drug';
+  $('results').innerHTML=liveRows.length&&!liveView.length?'<p class="status">No potential signals among these.</p>':tableHtml(liveView,label,{withBtns:true,drug:ctx?ctx.subject:''});
+}
+function showMetrics(){
+  const subjLabel=mode==='drug'?`Reports mentioning ${esc(ctx.subject)}`:`Reports of "${esc(ctx.subject)}"`;
+  $('metrics').innerHTML=`<div class="metrics"><div class="metric"><b>${ctx.totalAll.toLocaleString()}</b><span>Total FAERS reports</span></div><div class="metric"><b>${ctx.totalDrug.toLocaleString()}</b><span>${subjLabel}</span></div></div>`;
+}
+function resetLive(){liveRows=[];liveView=[];$('results').innerHTML='';$('metrics').innerHTML='';$('csvBox').innerHTML='';$('tools').style.display='none'}
+function failMsg(e){setStatus(`Live fetch failed: ${e.message}. If this artifact's sandbox blocks outside requests, use the Calculator tab, or run the Python/Streamlit version locally.`,true)}
+
+function setMode(m){
+  mode=m;
+  document.querySelectorAll('.modebtn').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));
+  if(m==='drug'){
+    $('primaryField').querySelector('label').textContent='Drug name (brand or generic)';
+    $('primaryInput').value='ozempic';
+    $('topN').previousElementSibling.textContent='Top reactions (5–20)';
+    $('specificField').querySelector('label').textContent='Or check one specific reaction for this drug';
+    $('specificEvent').placeholder='e.g. pancreatitis';
+  }else{
+    $('primaryField').querySelector('label').textContent='Reaction / event (MedDRA term)';
+    $('primaryInput').value='pancreatitis';
+    $('topN').previousElementSibling.textContent='Top drugs (5–20)';
+    $('specificField').querySelector('label').textContent='Or check one specific drug for this event';
+    $('specificEvent').placeholder='e.g. ozempic';
+  }
+  resetLive();setStatus('');
+}
+
+async function loadBase(subject){
+  setStatus(mode==='drug'?`Counting reports for ${subject}…`:`Counting reports of ${subject}…`);
+  const totalAll=await totalReports();
+  const totalDrug=await totalReports(mode==='drug'?drugQ(subject):eventQ(subject));
+  return {subject,totalAll,totalDrug};
+}
+async function runLive(){
+  if(busy) return;
+  const subject=$('primaryInput').value.trim();
+  const topN=Math.min(20,Math.max(5,Math.round(+$('topN').value)||10));
+  if(!subject){setStatus('Enter a value first.',true);return}
+  setBusy(true);resetLive();
+  try{
+    ctx=await loadBase(subject);
+    if(!ctx.totalDrug){setStatus(`No reports found for "${subject}". Try another spelling.`,true);setBusy(false);return}
+    showMetrics();
+    if(mode==='drug') pushRecent(subject);
+    const countField=mode==='drug'?'patient.reaction.reactionmeddrapt.exact':'patient.drug.medicinalproduct.exact';
+    const searchField=mode==='drug'?drugQ(subject):eventQ(subject);
+    const items=(await apiGet({search:searchField,count:countField,limit:topN})).results||[];
+    for(let i=0;i<items.length;i++){
+      const {term,count:a}=items[i];
+      setProgress(i,items.length,term);
+      const otherQ=mode==='drug'?eventQ(term):drugQ(term);
+      const totalOther=await totalReports(otherQ);
+      const r=buildRow(term,a,ctx.totalDrug-a,totalOther-a,ctx.totalAll-ctx.totalDrug-(totalOther-a));
+      if(r){r.totalOther=totalOther;liveRows.push(r);showLive()}
+    }
+    setStatus(liveRows.length?`Done — ${liveRows.length} analyzed.`:'No analyzable results returned.');
+  }catch(e){failMsg(e)}
+  setBusy(false);
+}
+async function checkEvent(){
+  if(busy) return;
+  const subject=$('primaryInput').value.trim(), other=$('specificEvent').value.trim().toUpperCase();
+  if(!subject||!other){setStatus('Fill in both fields.',true);return}
+  setBusy(true);resetLive();
+  try{
+    ctx=await loadBase(subject);
+    if(!ctx.totalDrug){setStatus(`No reports found for "${subject}".`,true);setBusy(false);return}
+    showMetrics();if(mode==='drug')pushRecent(subject);
+    setStatus(`Counting "${other}"…`);
+    const otherQ=mode==='drug'?eventQ(other):drugQ(other);
+    const totalOther=await totalReports(otherQ);
+    if(!totalOther){setStatus(`No reports match "${other}".`,true);setBusy(false);return}
+    const pairQ=mode==='drug'?`${drugQ(subject)} AND ${eventQ(other)}`:`${eventQ(subject)} AND ${drugQ(other)}`;
+    const a=await totalReports(pairQ);
+    if(!a){setStatus(`No reports pair these two.`,true);setBusy(false);return}
+    const r=buildRow(other,a,ctx.totalDrug-a,totalOther-a,ctx.totalAll-ctx.totalDrug-(totalOther-a));
+    if(!r){setStatus('Counts too small/overlapping to compute.',true);setBusy(false);return}
+    r.totalOther=totalOther;liveRows=[r];showLive();setStatus('Done.');
+  }catch(e){failMsg(e)}
+  setBusy(false);
+}
+function csvText(){
+  const h=['Term','a','b','c','d','PRR','PRR_low','PRR_high','ROR','ROR_low','ROR_high','chi2','IC_approx','EBGM_approx','Agreement','Signal'];
+  const q=v=>`"${String(v).replace(/"/g,'""')}"`;
+  return [h.join(',')].concat(liveView.map(r=>[q(r.term),r.a,r.b,r.c,r.d,r.prr,r.prrLow,r.prrHigh,r.ror,r.rorLow,r.rorHigh,r.chi2,r.ic,r.ebgm,r.agree+'/4',r.signal?'YES':'No'].join(','))).join('\n');
+}
+async function copyCsv(){
+  const t=csvText();
+  try{await navigator.clipboard.writeText(t);$('csvBox').innerHTML='<p class="note">Copied — paste into Excel or Sheets.</p>'}
+  catch(e){$('csvBox').innerHTML='<p class="note">Copy blocked here — select all below and copy manually.</p><textarea id="csvArea" readonly></textarea>';$('csvArea').value=t;$('csvArea').select()}
+}
+
+// ---------- INVESTIGATE (case-level) ----------
+const OUTCOME={1:'Recovered/resolved',2:'Recovering/resolving',3:'Not recovered',4:'Recovered with sequelae',5:'Fatal',6:'Unknown'};
+const SEX={1:'Male',2:'Female'};
+const ACTION={1:'Drug withdrawn',2:'Dose reduced',3:'Dose increased',4:'Dose not changed',5:'Unknown',6:'Not applicable'};
+const RECUR={1:'Reaction recurred on rechallenge',2:'Reaction did not recur',3:'Unknown'};
+const AGEUNIT={800:10,801:1,802:1/12,803:1/52,804:1/365,805:1/8760};
+function ageGroup(age){if(age==null)return'Unknown';if(age<18)return'<18';if(age<45)return'18–44';if(age<65)return'45–64';if(age<75)return'65–74';return'75+'}
+function barListHtml(counts,total){
+  const entries=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  if(!entries.length) return '<p class="note">No data in this sample.</p>';
+  const max=entries[0][1];
+  return '<div class="barlist">'+entries.map(([k,v])=>`<div class="r"><span>${esc(k)}</span><div class="t"><div style="width:${(v/max*100)}%"></div></div><span>${v}</span></div>`).join('')+`</div><p class="note">${total} report(s) in this sample.</p>`;
+}
+async function investigate(r){
+  if(!ctx) return;
+  const drug=mode==='drug'?ctx.subject:r.term, event=mode==='drug'?r.term:ctx.subject;
+  $('investEmpty').style.display='none';$('investBody').style.display='';
+  $('investLabel').textContent=`${drug} + ${event} — sample of up to 100 most recent matching reports`;
+  $('investStatus').textContent='Fetching case sample…';$('investContent').innerHTML='';
+  showTab('invest');
+  try{
+    const data=await apiGet({search:`${drugQ(drug)} AND ${eventQ(event)}`,limit:100,sort:'receivedate:desc'});
+    const reports=data.results||[];
+    if(!reports.length){$('investStatus').textContent='No case-level records retrieved.';return}
+    $('investStatus').textContent='';
+    const serious={},outcome={},sex={},age={},year={},indication={},concomitant={},action={},recur={};
+    let fatal=[];const rows=[];
+    for(const rep of reports){
+      const s=rep.serious==='1'?'Serious':(rep.serious==='2'?'Not serious':'Unknown');
+      serious[s]=(serious[s]||0)+1;
+      const sx=SEX[rep.patient?.patientsex]||'Unknown/Not specified';sex[sx]=(sex[sx]||0)+1;
+      let ageYears=null;
+      const rawAge=parseFloat(rep.patient?.patientonsetage);
+      if(!isNaN(rawAge)){const unit=AGEUNIT[rep.patient?.patientonsetageunit]??1;ageYears=rawAge*unit}
+      const ag=ageGroup(ageYears);age[ag]=(age[ag]||0)+1;
+      const yr=(rep.receivedate||'').slice(0,4)||'Unknown';year[yr]=(year[yr]||0)+1;
+      const reactions=rep.patient?.reaction||[];
+      const matched=reactions.find(x=>(x.reactionmeddrapt||'').toUpperCase()===event.toUpperCase())||reactions[0];
+      const oc=OUTCOME[matched?.reactionoutcome]||'Unknown';outcome[oc]=(outcome[oc]||0)+1;
+      if(matched?.reactionoutcome==='5') fatal.push({id:rep.safetyreportid,date:rep.receivedate,age:ageYears?Math.round(ageYears):null,sex:sx});
+      const drugs=rep.patient?.drug||[];
+      const target=drugs.find(dr=>(dr.medicinalproduct||'').toUpperCase().includes(drug.toUpperCase()));
+      if(target?.drugindication && target.drugindication.toUpperCase()!=='UNKNOWN'){indication[target.drugindication]=(indication[target.drugindication]||0)+1}
+      if(target?.actiondrug){const al=ACTION[target.actiondrug]||'Unknown';action[al]=(action[al]||0)+1}
+      if(target?.drugrecurreadministration){const rl=RECUR[target.drugrecurreadministration]||'Unknown';recur[rl]=(recur[rl]||0)+1}
+      for(const dr of drugs){
+        if(dr===target) continue;
+        if(dr.drugcharacterization==='2'||dr.drugcharacterization==='3'){
+          const nm=dr.medicinalproduct||'Unknown';concomitant[nm]=(concomitant[nm]||0)+1;
+        }
+      }
+      rows.push({id:rep.safetyreportid,date:rep.receivedate,age:ageYears?Math.round(ageYears):'?',sex:sx,serious:s,outcome:oc,indication:target?.drugindication||'—'});
+    }
+    const html=`
+      <div class="grid2">
+        <div><h3 style="margin-top:0">Seriousness</h3>${barListHtml(serious,reports.length)}</div>
+        <div><h3 style="margin-top:0">Outcome</h3>${barListHtml(outcome,reports.length)}</div>
+        <div><h3 style="margin-top:0">Sex</h3>${barListHtml(sex,reports.length)}</div>
+        <div><h3 style="margin-top:0">Age group</h3>${barListHtml(age,reports.length)}</div>
+        <div><h3 style="margin-top:0">Reporting year (sample only)</h3>${barListHtml(year,reports.length)}</div>
+        <div><h3 style="margin-top:0">Indication for the drug</h3>${barListHtml(indication,reports.length)}</div>
+        <div><h3 style="margin-top:0">Top concomitant drugs</h3>${barListHtml(concomitant,reports.length)}</div>
+        <div><h3 style="margin-top:0">Dechallenge action</h3>${barListHtml(action,reports.length)}</div>
+      </div>
+      <h3>Rechallenge</h3>${barListHtml(recur,reports.length)}
+      <h3>Fatal-case review (${fatal.length})</h3>
+      ${fatal.length?`<div class="scroll"><table><tr><th>Report ID</th><th>Date</th><th>Age</th><th>Sex</th></tr>${fatal.slice(0,10).map(f=>`<tr><td>${esc(f.id)}</td><td>${esc(f.date)}</td><td>${f.age??'?'}</td><td>${esc(f.sex)}</td></tr>`).join('')}</table></div>`:'<p class="note">No fatal outcomes in this sample.</p>'}
+      <h3>Case-level sample (first 20 of ${rows.length})</h3>
+      <div class="scroll"><table><tr><th>Report ID</th><th>Date</th><th>Age</th><th>Sex</th><th>Serious</th><th>Outcome</th><th>Indication</th></tr>
+      ${rows.slice(0,20).map(x=>`<tr><td>${esc(x.id)}</td><td>${esc(x.date)}</td><td>${x.age}</td><td>${esc(x.sex)}</td><td>${esc(x.serious)}</td><td>${esc(x.outcome)}</td><td>${esc(x.indication)}</td></tr>`).join('')}</table></div>
+      <p class="note">Public FAERS/openFDA data does not include free-text narratives — only these structured fields.</p>`;
+    LASTX={n:reports.length,sig:{drug,event,a:r.a,prr:+r.prr.toFixed(2),ror:+r.ror.toFixed(2)},cases:mkCases(reports,drug,event)};
+    $('investContent').innerHTML=html+handoffHtml();const sv=getFb();if(sv)$('xFb').innerHTML=fbHtml(sv);
+  }catch(e){$('investStatus').innerHTML=`<span class="err">Investigation fetch failed: ${e.message}</span>`}
+}
+
+// ---------- SIGNAL <-> CASE PROCESSING HANDOFF ----------
+let LASTX=null;
+function mkCases(reps,drug,event){return reps.slice(0,30).map(rep=>{const p=rep.patient||{},rx=p.reaction||[],m=rx.find(x=>(x.reactionmeddrapt||'').toUpperCase()===event.toUpperCase())||rx[0]||{},ds=p.drug||[],t=ds.find(x=>(x.medicinalproduct||'').toUpperCase().includes(drug.toUpperCase()))||{};let a=parseFloat(p.patientonsetage);a=isNaN(a)?'':Math.round(a*(AGEUNIT[p.patientonsetageunit]??1));
+return{id:rep.safetyreportid,d:rep.receivedate||'',age:a,sex:{1:'M',2:'F'}[p.patientsex]||'',ser:rep.serious==='1'?1:0,
+crit:[rep.seriousnessdeath==='1'&&'Death',rep.seriousnesslifethreatening==='1'&&'Life-threatening',rep.seriousnesshospitalization==='1'&&'Hospitalisation',rep.seriousnessdisabling==='1'&&'Disability',rep.seriousnesscongenitalanomali==='1'&&'Congenital anomaly',rep.seriousnessother==='1'&&'Medically important'].filter(Boolean),
+out:OUTCOME[m.reactionoutcome]||'Unknown',pt:m.reactionmeddrapt||event,act:ACTION[t.actiondrug]||'',rec:RECUR[t.drugrecurreadministration]||'',ind:t.drugindication||'',con:ds.filter(x=>x!==t&&x.drugcharacterization!=='1').slice(0,3).map(x=>x.medicinalproduct)}})}
+const fbKey=()=>'faers_fb_'+LASTX.sig.drug.toLowerCase()+'__'+LASTX.sig.event.toLowerCase();
+function getFb(){try{return JSON.parse(localStorage.getItem(fbKey())||'null')}catch(e){return null}}
+function handoffHtml(){return `<div class="card" style="margin-top:1rem;border-left:4px solid var(--teal)"><h3 style="margin-top:0">🔗 Signal → case processing</h3><p class="note">Sending ${LASTX.cases.length} of ${LASTX.n} retrieved reports${LASTX.sig.a?' (FAERS lists '+LASTX.sig.a+' for this pair)':''}${LASTX.n>30?'. <b>Capped at 30: this is a sample of the most recent cases, not the full set.</b>':'.'} Send them to the ICSR Case Workbench (Project 2). Process them there, then paste the feedback back here to see how case review supports this signal.</p><div class="row"><button class="run" id="xSend">📤 Copy case set for Project 2</button><a href="${'https://claude.ai/artifact/D9uTvfwWY587yg7ANV2TT3'}" target="_blank" rel="noopener" style="color:var(--teal);font-size:.88rem">Open Project 2 ↗</a></div><textarea id="xBox" style="display:none"></textarea><h3>📥 Feedback from case processing</h3><textarea id="xIn" placeholder="Paste the feedback copied from Project 2"></textarea><button class="run ghost" id="xImp" style="margin-top:.4rem">Import feedback</button><div id="xFb" style="margin-top:.6rem"></div></div>`}
+const fbHtml=f=>{const p=x=>f.n?Math.round(x/f.n*100)+'%':'–',ok=f.n>=3&&f.caus/f.n>=.5;return`<div class="metrics">${[['Cases processed',f.n+' / '+f.total],['Serious',f.ser],['Fatal',f.fatal],['Possible+ causality',f.caus+' ('+p(f.caus)+')'],['Probable+',f.prob],['Positive dechallenge',f.dch],['Rechallenge info',f.rch],['QC pass',f.qc]].map(x=>`<div class="metric"><b>${x[1]}</b><span>${x[0]}</span></div>`).join('')}</div><div class="warn" style="margin-top:.6rem">${f.n<3?'Too few processed cases to judge yet.':ok?'Case review supports the statistical signal: at least half of processed cases have Possible or better causality. Consider escalating for medical review.':'Case review gives limited support so far: fewer than half of processed cases reach Possible causality. Keep reviewing before escalating.'} <i>Educational heuristic only.</i></div>`};
+$('investContent').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b||!LASTX)return;
+if(b.id=='xSend'){const t='PVCASES:'+JSON.stringify(LASTX),bx=$('xBox');bx.style.display='';bx.value=t;try{await navigator.clipboard.writeText(t);b.textContent='✅ Copied '+LASTX.cases.length+' cases'}catch(_){bx.select();b.textContent='Select and copy the text below'}}
+if(b.id=='xImp'){try{const f=JSON.parse($('xIn').value.trim().replace(/^PVFEEDBACK:/,''));if((f.sig?.drug||'').toLowerCase()!==LASTX.sig.drug.toLowerCase()||(f.sig?.event||'').toLowerCase()!==LASTX.sig.event.toLowerCase())throw new Error('This feedback is for a different signal: '+f.sig?.drug+' — '+f.sig?.event);try{localStorage.setItem(fbKey(),JSON.stringify(f))}catch(_){}$('xFb').innerHTML=fbHtml(f)}catch(err){$('xFb').innerHTML=`<p class="err">${esc(err.message)}</p>`}}});
+
+// ---------- CALCULATOR ----------
+function addCalcRow(name,a,total){
+  const d=document.createElement('div');d.className='drug-row';
+  d.innerHTML=`<div class="field"><label>Drug name</label><input type="text" class="c-name" value="${esc(name)}"></div><div class="field"><label>Reports of event (a)</label><input type="number" class="c-a" value="${a}"></div><div class="field"><label>All reports for drug (a+b)</label><input type="number" class="c-total" value="${total}"></div><button class="rm" title="Remove">✕</button>`;
+  d.querySelector('.rm').onclick=()=>{d.remove();runCalc()};
+  $('calcRows').appendChild(d);
+}
+function runCalc(){
+  const N=+$('calcN').value,E=+$('calcE').value,out=$('calcOut');
+  const els=[...$('calcRows').querySelectorAll('.drug-row')];
+  if(!N||!E||!els.length){out.innerHTML='<p class="status">Set N and E, and add at least one drug.</p>';return}
+  const rows=[];let skipped=0;
+  for(const el of els){
+    const name=el.querySelector('.c-name').value||'Unnamed drug',a=+el.querySelector('.c-a').value,tot=+el.querySelector('.c-total').value;
+    const r=(a>0&&tot>=a)?buildRow(name,a,tot-a,E-a,N-tot-(E-a)):null;
+    r?rows.push(r):skipped++;
+  }
+  if(!rows.length){out.innerHTML='<p class="status err">Check your numbers: a cannot exceed the drug total, E must exceed a, and N must exceed the drug total plus E − a.</p>';return}
+  calcData=rows;calcSkipped=skipped;renderCalc();
+}
+function renderCalc(){
+  $('calcOut').innerHTML=tableHtml(calcData,'Drug',{withBtns:false})+(calcSkipped?`<p class="note">${calcSkipped} row(s) skipped — invalid table.</p>`:'');
+}
+function resetCalc(){
+  $('calcRows').innerHTML='';calcEvent=null;$('calcLabel').textContent='';
+  $('calcN').value=12000000;$('calcE').value=9540;
+  addCalcRow('Drug A',187,56799);addCalcRow('Drug B',410,135992);runCalc();
+}
+function sendToCalc(r){
+  if(calcEvent!==r.term){$('calcRows').innerHTML='';calcEvent=r.term}
+  $('calcN').value=ctx.totalAll;$('calcE').value=r.totalOther;
+  $('calcLabel').textContent=`Loaded from live data — comparing on: ${r.term}. Add another drug's numbers for the same event to compare.`;
+  const subj=ctx.subject;
+  const ex=[...$('calcRows').querySelectorAll('.drug-row')].find(x=>x.querySelector('.c-name').value.toLowerCase()===subj.toLowerCase());
+  if(ex){ex.querySelector('.c-a').value=r.a;ex.querySelector('.c-total').value=ctx.totalDrug}
+  else addCalcRow(subj,r.a,ctx.totalDrug);
+  runCalc();showTab('calc');
+}
+
+// ---------- WIRING ----------
+function showTab(id){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===id));
+  ['live','invest','calc','learn'].forEach(s=>$(s).style.display=s===id?'':'none');
+}
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>showTab(t.dataset.tab));
+document.querySelectorAll('.modebtn').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
+document.querySelectorAll('#quickChips .chip').forEach(c=>c.onclick=()=>{$('primaryInput').value=c.dataset.v;runLive()});
+$('runBtn').onclick=runLive;$('checkBtn').onclick=checkEvent;$('copyBtn').onclick=copyCsv;
+$('printBtn').onclick=()=>window.print();
+$('onlySignals').onchange=showLive;
+$('primaryInput').addEventListener('keydown',e=>{if(e.key==='Enter')runLive()});
+$('specificEvent').addEventListener('keydown',e=>{if(e.key==='Enter')checkEvent()});
+
+// results table: header sort, row expand, calc/investigate buttons
+$('results').addEventListener('click',e=>{
+  const th=e.target.closest('th[data-key]');
+  if(th){const k=th.dataset.key;sortDir=(sortKey===k)?-sortDir:-1;sortKey=k;showLive();return}
+  const calcBtn=e.target.closest('.calcbtn');
+  if(calcBtn){sendToCalc(liveView[+calcBtn.dataset.i]);return}
+  const investBtn=e.target.closest('.investbtn');
+  if(investBtn){investigate(liveView[+investBtn.dataset.i]);return}
+  const saveBtn=e.target.closest('[data-save]');
+  if(saveBtn){
+    const panel=saveBtn.closest('.expand');
+    saveReview(ctx.subject,saveBtn.dataset.save,panel.querySelector('.revStatus').value,panel.querySelector('.revNote').value);
+    showLive();return;
+  }
+  const tr=e.target.closest('tr.rowclick');
+  if(tr){
+    const i=+tr.dataset.i, r=liveView[i];
+    const existing=tr.nextElementSibling;
+    if(existing && existing.classList.contains('expandRow')){existing.remove();return}
+    document.querySelectorAll('.expandRow').forEach(x=>x.remove());
+    const tdCount=tr.children.length;
+    const row=document.createElement('tr');row.className='expandRow';
+    row.innerHTML=`<td colspan="${tdCount}">${expandHtml(r,ctx.subject)}</td>`;
+    tr.after(row);
+  }
+});
+$('calcOut').addEventListener('click',e=>{const th=e.target.closest('th[data-key]');if(th){const k=th.dataset.key;sortDir=(sortKey===k)?-sortDir:-1;sortKey=k;renderCalc()}});
+$('addRow').onclick=()=>addCalcRow('','','');$('calcBtn').onclick=runCalc;$('resetCalc').onclick=resetCalc;
+$('calc').addEventListener('input',e=>{if(e.target.matches('input'))runCalc()});
+renderRecent();resetCalc();
+</script>
+</body>
+</html>
