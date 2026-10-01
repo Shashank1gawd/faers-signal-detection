@@ -11,7 +11,7 @@ A single-file, browser-based pharmacovigilance (PV) tool that screens **FDA FAER
 ## Live demo
 
 After you enable GitHub Pages (see [Deploy](#deploy-on-github-pages)):
-`https://YOUR-USERNAME.github.io/faers-signal-detection/`
+`https://Shashank1gawd.github.io/faers-signal-detection/`
 
 ## Use case
 
@@ -120,4 +120,4 @@ MIT, see [LICENSE](LICENSE). Data from openFDA is subject to FDA's terms.
 
 ## Author
 
-YOUR NAME · [LinkedIn](https://www.linkedin.com/in/YOUR-PROFILE) · [GitHub](https://github.com/YOUR-USERNAME)
+Shashank Gautam · [LinkedIn](www.linkedin.com/in/shashank-gautam2004) · [GitHub](https://github.com/Shashank1gawd)
